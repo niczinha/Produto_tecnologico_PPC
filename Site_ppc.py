@@ -96,7 +96,7 @@ elif st.session_state.node == 'modelo_teorico':
         texto_propriedades = """
         * **Dinâmico vs. Estático:** **Dinâmico** se o modelo contém derivadas, descrevendo a evolução temporal do sistema. **Estático** se descreve o sistema em regime permanente (derivadas nulas).
         * **Linear vs. Não-Linear:** **Linear** se as equações obedecem ao princípio da superposição. **Não-Linear** se contêm termos como potências, produtos de variáveis ou funções não-lineares.
-        * **Forçado vs. Não-Forçado (Autônomo):** Um sistema é **Forçado** se possui uma ou mais entradas externas que afetam seu comportamento. É **Não-Forçado** ou **Autônomo** se não há entradas externas, e sua resposta depende apenas das condições iniciais.
+        * **Forçado vs. Não-Forçado (Autônomo):** Um sistema é **Forçado** se possui uma ou mais entradas externas que afetam seu comportamento (ex: $\epsilon(t)$ ou $q_{in}(t) \neq 0$). É **Não-Forçado** ou **Autônomo** se não há entradas externas, e sua resposta depende apenas das condições iniciais.
         * **Invariante vs. Variante no Tempo:** **Invariante** se os parâmetros do modelo são constantes. **Variante** se os parâmetros mudam com o tempo.
         * **SISO vs. MISO, etc.:** Descreve a arquitetura de entradas/saídas. **SISO** (Single-Input, Single-Output), **MISO** (Multiple-Input, Single-Output), etc.
         * **Tempo-Contínuo vs. Tempo-Discreto:** **Contínuo** se descrito por equações diferenciais. **Discreto** se por equações de diferença.
@@ -132,52 +132,83 @@ elif st.session_state.node == 'modelo_teorico':
         $\text{ACÚMULO} = \text{ENTRADA} - \text{SAÍDA} + \text{GERAÇÃO} - \text{CONSUMO}$
         """)
         
-        with st.expander("Exemplo 1: Vaso Pulmão (Tanque de Nível) - 1ª Ordem Linear"):
-            st.markdown("Este é o exemplo clássico de um sistema de primeira ordem. O objetivo é modelar como a altura **h(t)** do líquido varia com a vazão de entrada **qin(t)**.")
-            st.subheader("1. Princípio da Conservação de Massa")
-            st.latex(r"A \frac{dh(t)}{dt} = q_{in}(t) - q_{out}(t)")
-            st.subheader("2. Relação Constitutiva (Saída)")
-            st.latex(r"q_{out}(t) = \frac{h(t)}{R_h}")
-            st.subheader("3. Obtenção da EDO")
-            st.latex(r"\boxed{AR_h \frac{dh}{dt} + h(t) = R_h q_{in}(t)}")
+        # --- SEÇÃO DO TANQUE ATUALIZADA ---
+        with st.expander("Exemplo 1: Tanque de Nível (Integrador Puro)"):
+            st.markdown("Vamos modelar a altura do líquido $h(t)$ em um tanque, assumindo que as vazões são controladas externamente.")
             
-            st.subheader("4. Premissas e Classificação")
+            st.subheader("1. Princípio da Conservação de Massa")
+            st.markdown("Iniciamos com o balanço de massa. A taxa de acúmulo de massa no tanque é a vazão mássica de entrada ($\dot{M}_{in}$) menos a de saída ($\dot{M}_{out}$).")
+            st.latex(r"\frac{dM(t)}{dt} = \dot{M}_{in}(t) - \dot{M}_{out}(t)")
+            st.markdown("Onde $M(t)$ é a massa do líquido [kg] e $\dot{M}$ é a vazão mássica [kg/s].")
+
+            st.subheader("2. Conversão para Balanço Volumétrico")
+            st.markdown("Usamos a relação $M = \rho \cdot V$ (massa = densidade x volume) e $\dot{M} = \rho \cdot Q$ (vazão mássica = densidade x vazão volumétrica).")
+            st.latex(r"\frac{d(\rho V(t))}{dt} = \rho Q_{in}(t) - \rho Q_{out}(t)")
+            
+            st.markdown("**Premissa:** Assumimos que o fluido é **incompressível**, ou seja, sua densidade ($\rho$) é constante. Assim, podemos retirá-la da derivada:")
+            st.latex(r"\rho \frac{dV(t)}{dt} = \rho \left( Q_{in}(t) - Q_{out}(t) \right) \implies \frac{dV(t)}{dt} = Q_{in}(t) - Q_{out}(t)")
+            st.markdown("Este é o **balanço volumétrico**.")
+            
+            st.subheader("3. Relação com a Altura (h)")
+            st.markdown("O volume $V$ de um tanque é a área da base $A$ multiplicada pela altura $h(t)$.")
+            st.latex(r"V(t) = A \cdot h(t)")
+            st.markdown("Substituindo $V(t)$ no balanço volumétrico:")
+            st.latex(r"\frac{d(A \cdot h(t))}{dt} = Q_{in}(t) - Q_{out}(t)")
+            st.markdown("**Premissa:** Assumimos que o tanque tem **área de seção transversal (A) constante**. Assim, podemos retirá-la da derivada:")
+            st.latex(r"A \frac{dh(t)}{dt} = Q_{in}(t) - Q_{out}(t)")
+            
+            st.subheader("4. Obtenção da EDO Final")
+            st.markdown("Finalmente, isolando a derivada, temos a equação dinâmica do nível do líquido:")
+            st.latex(r"\boxed{\frac{dh(t)}{dt} = \frac{Q_{in}(t) - Q_{out}(t)}{A}}")
+            
+            st.subheader("5. Premissas e Classificação")
             st.markdown("""
-            * **Premissas:** Área do tanque (A) constante, resistência hidráulica (Rh) linear e constante, fluido incompressível, parâmetros concentrados.
-            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Forçado** (pela entrada $q_{in}$), **SISO** (entrada $q_{in}$, saída $h$), de **Primeira Ordem** e **Invariante no Tempo**.
+            * **Premissas (Resumo):** Fluido incompressível, área do tanque (A) constante. Ambas as vazões ($Q_{in}$ e $Q_{out}$) são bombeadas (ou seja, são entradas independentes e não dependem da altura $h$).
+            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Forçado** (pelas vazões), **MISO** (entradas $Q_{in}, Q_{out}$, saída $h$), de **Primeira Ordem** e **Invariante no Tempo**. Este é um sistema **integrador puro**.
             """)
 
-            st.subheader("5. Prévia da Resposta Dinâmica (Interativo)")
-            st.markdown("Como a **Área (A)** e a **Resistência (Rh)** afetam a resposta do tanque a um degrau na vazão de entrada?")
+            st.subheader("6. Prévia da Resposta Dinâmica (Interativo)")
+            st.markdown("Como as vazões de entrada e saída afetam o nível? (Assumindo que $Q_{in}$ e $Q_{out}$ são constantes).")
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                A_tanque = st.slider("Área do Tanque (A)", 0.5, 5.0, 1.0, 0.5, key='A_tanque')
+                Q_in_tanque = st.slider("Vazão de Entrada (Qin)", 0.0, 5.0, 2.0, 0.1, key='Qin_tanque')
             with col2:
-                Rh_tanque = st.slider("Resistência Hidráulica (Rh)", 0.5, 5.0, 2.0, 0.5, key='Rh_tanque')
+                Q_out_tanque = st.slider("Vazão de Saída (Qout)", 0.0, 5.0, 1.5, 0.1, key='Qout_tanque')
+            with col3:
+                A_tanque = st.slider("Área do Tanque (A)", 0.5, 5.0, 1.0, 0.5, key='A_tanque')
 
             st.markdown("**Análise dos Parâmetros:**")
             st.markdown(r"""
-            As duas características principais do sistema são o Ganho ($K_p$) e a Constante de Tempo ($\tau_p$):
-            * **Ganho ($K_p = R_h$):** Define o valor final da altura para uma entrada degrau. Se $R_h \uparrow$, o ganho $\uparrow$ (o nível final será mais alto).
-            * **Constante de Tempo ($\tau_p = A \cdot R_h$):** Define a "velocidade" do sistema. 
-                * Se $A \uparrow$ (tanque mais largo) $\implies \tau_p \uparrow$ (sistema **mais lento**).
-                * Se $R_h \uparrow$ (saída mais restrita) $\implies \tau_p \uparrow$ (sistema **mais lento**).
+            Este sistema é um **integrador**. Ele não tem um "valor final" estável por si só.
+            * **Se $Q_{in} > Q_{out}$:** O nível **sobe linearmente** (rampa positiva). O tanque transborda.
+            * **Se $Q_{in} < Q_{out}$:** O nível **desce linearmente** (rampa negativa). O tanque esvazia.
+            * **Se $Q_{in} = Q_{out}$:** O nível fica **constante** (estado estacionário).
+            * **Se $A \uparrow$ (tanque mais largo):** A inclinação da rampa $\left( \frac{Q_{in} - Q_{out}}{A} \right)$ diminui, tornando o processo **mais lento**.
             """)
 
-            Kp_tanque = Rh_tanque
-            tau_p_tanque = A_tanque * Rh_tanque
+            Q_net = Q_in_tanque - Q_out_tanque
+            h0 = 10.0 # Condição inicial de altura
             t_tanque = np.linspace(0, 50, 500) # Eixo do tempo fixo
-            y_tanque = Kp_tanque * (1 - np.exp(-t_tanque / tau_p_tanque))
+            y_tanque = (Q_net / A_tanque) * t_tanque + h0
+            # Garante que o nível não fique negativo
+            y_tanque = np.maximum(y_tanque, 0) 
 
             fig_tanque, ax_tanque = plt.subplots()
-            ax_tanque.plot(t_tanque, y_tanque, label=f'Resposta (h(t))')
-            ax_tanque.axhline(Kp_tanque, color='red', linestyle='--', label=f'Valor Final (Kp = {Kp_tanque:.2f})')
-            ax_tanque.axvline(tau_p_tanque, color='gray', linestyle='--', label=f'Const. Tempo (τp = {tau_p_tanque:.2f} s)')
-            ax_tanque.set_title("Resposta ao Degrau de 1ª Ordem")
+            ax_tanque.plot(t_tanque, y_tanque, label=f'Altura (h(t))')
+            ax_tanque.axhline(h0, color='gray', linestyle='--', label=f'Altura Inicial (h0 = {h0} m)')
+            
+            if Q_net > 0:
+                taxa_str = f"Enchendo ({Q_net/A_tanque:+.2f} m/s)"
+            elif Q_net < 0:
+                taxa_str = f"Esvaziando ({Q_net/A_tanque:+.2f} m/s)"
+            else:
+                taxa_str = "Estacionário (+0.00 m/s)"
+            
+            ax_tanque.set_title(f"Resposta do Integrador: {taxa_str}")
             ax_tanque.set_xlabel("Tempo (s)")
             ax_tanque.set_ylabel("Altura (h)")
-            ax_tanque.set_ylim(0, max(5.5, Kp_tanque * 1.1))
+            ax_tanque.set_ylim(0, 50) # Eixo Y Fixo
             ax_tanque.legend()
             ax_tanque.grid(True)
             st.pyplot(fig_tanque)
@@ -448,7 +479,6 @@ elif st.session_state.node == 'modelo_teorico':
 
     elif tipo_sistema == "Sistemas Mecânicos":
         st.header("Sistemas Mecânicos")
-        # --- ATUALIZADO ---
         st.info(r"""
         **Caixa de Ferramentas para Sistemas Mecânicos:**
         
@@ -478,7 +508,6 @@ elif st.session_state.node == 'modelo_teorico':
         """)
         
         with st.expander("Exemplo 1: Sistema Massa-Mola-Amortecedor (M-C-K)"):
-            # --- MODELO CORRIGIDO PARA NÃO-FORÇADO (FIEL AO SLIDE) ---
             st.markdown("Este é o análogo mecânico do circuito RLC. O objetivo é modelar a **resposta livre** da posição **z(t)** da massa, ou seja, sem uma força externa aplicada.")
             st.subheader("1. Princípio Fundamental (2ª Lei de Newton)")
             st.markdown("O somatório das forças é igual à massa vezes a aceleração. No caso não-forçado, as únicas forças são as de restauração da mola e do amortecedor.")
@@ -578,11 +607,10 @@ elif st.session_state.node == 'modelo_teorico':
             """)
             st.info("A simulação de sistemas MIMO acoplados é complexa e requer métodos numéricos para EDOs, que serão vistos em tópicos futuros.")
 
-        # --- EXEMPLO NOVO: PÊNDULO SIMPLES ---
         with st.expander("Exemplo 3: Pêndulo Simples (Formulação Lagrangiana)"):
             st.markdown("Modelagem do ângulo $\\theta(t)$ de um pêndulo simples de comprimento $L$ e massa $m$.")
             st.subheader("1. Princípio Fundamental (Formulação Lagrangiana)")
-            st.markdown("Usamos a abordagem da energia, que é mais simples para sistemas rotacionais. A coordenada generalizada é $q = \theta$.")
+            st.markdown("Usamos a abordagem da energia, que é mais simples para sistemas rotacionais. A coordenada generalizada é $q = \\theta$.")
             st.markdown("**Energia Cinética ($K$):**")
             st.latex(r"x_G = L\sin\theta \implies \dot{x}_G = L\dot{\theta}\cos\theta")
             st.latex(r"y_G = -L\cos\theta \implies \dot{y}_G = L\dot{\theta}\sin\theta")
@@ -605,9 +633,9 @@ elif st.session_state.node == 'modelo_teorico':
             st.latex(r"\boxed{\ddot{\theta}(t) + \frac{g}{L}\theta(t) = 0}")
 
             st.subheader("4. Premissas e Classificação (Modelo Linearizado)")
-            st.markdown("""
-            * **Premissas:** Haste de massa desprezível, pivô sem atrito, massa pontual, movimento em 2D, ângulos pequenos.
-            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Não-Forçado** (autônomo), **SISO** (sem entrada, saída $\\theta$), de **Segunda Ordem** e **Invariante no Tempo**.
+            st.markdown(r"""
+            * **Premissas:** Haste de massa desprezível, pivô sem atrito, massa pontual, movimento em 2D, **pequenos ângulos ($\sin\theta \approx \theta$)**.
+            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Não-Forçado** (autônomo), **SISO** (sem entrada, saída $\theta$), de **Segunda Ordem** e **Invariante no Tempo**.
             """)
             
             st.subheader("5. Prévia da Resposta Dinâmica (Modelo Linearizado)")
@@ -659,7 +687,7 @@ elif st.session_state.node == 'modelo_teorico':
             st.markdown("Vamos modelar a velocidade angular de saída ($\omega$) de um motor DC em resposta a uma tensão de entrada ($E(t)$).")
             
             st.subheader("1. Domínio Mecânico (Lei de Newton-Euller)")
-            st.markdown("O somatório dos torques no rotor é igual ao momento de inércia ($J$) vezes a aceleração angular ($\ddot{\\theta}$ ou $\dot{\omega}$). O torque resultante ($\tau_R$) é o torque gerado pelo motor ($\tau_g$) menos o torque de atrito ($\tau_f$).")
+            st.markdown("O somatório dos torques no rotor é igual ao momento de inércia ($J$) vezes a aceleração angular ($\ddot{\theta}$ ou $\dot{\omega}$). O torque resultante ($\tau_R$) é o torque gerado pelo motor ($\tau_g$) menos o torque de atrito ($\tau_f$).")
             st.latex(r"(1) \quad J \frac{d^2\theta}{dt^2} = \tau_R = \tau_g(t) - \tau_f(t)")
             
             st.subheader("2. Domínio Elétrico (Lei das Malhas)")
@@ -682,12 +710,12 @@ elif st.session_state.node == 'modelo_teorico':
             st.latex(r"J \frac{d^2\theta}{dt^2} = K_1 \left( \frac{E(t) - K_2 \omega(t)}{R} \right) - B \omega(t)")
             st.markdown("Distribuindo os termos, chegamos à equação resultante (6) do slide:")
             st.latex(r"\boxed{J\frac{d^{2}\theta(t)}{dt^{2}} = \frac{K_1}{R}E(t) - \left(\frac{K_1 K_2}{R} + B\right)\omega(t)}")
-            st.markdown("Esta é uma EDO de 1ª ordem para a velocidade $\omega(t)$, já que $\\frac{d^2\theta}{dt^2} = \\frac{d\omega}{dt}$.")
+            st.markdown("Esta é uma EDO de 1ª ordem para a velocidade $\omega(t)$, já que $\frac{d^2\theta}{dt^2} = \frac{d\omega}{dt}$.")
 
             st.subheader("5. Premissas e Classificação")
             st.markdown("""
             * **Premissas:** Fluxo magnético constante, perdas por atrito viscoso (parâmetros J, B, R, K₁, K₂ constantes), indutância da armadura desprezível.
-            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Forçado** (pela tensão $E$), **SISO** (entrada $E$, saída $\\omega$), de **Primeira Ordem** (em $\\omega$) e **Invariante no Tempo**.
+            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Forçado** (pela tensão $E$), **SISO** (entrada $E$, saída $\omega$), de **Primeira Ordem** (em $\omega$) e **Invariante no Tempo**.
             """)
             
             st.subheader("6. Prévia da Resposta Dinâmica (Interativo)")
