@@ -96,7 +96,7 @@ elif st.session_state.node == 'modelo_teorico':
         texto_propriedades = """
         * **Dinâmico vs. Estático:** **Dinâmico** se o modelo contém derivadas, descrevendo a evolução temporal do sistema. **Estático** se descreve o sistema em regime permanente (derivadas nulas).
         * **Linear vs. Não-Linear:** **Linear** se as equações obedecem ao princípio da superposição. **Não-Linear** se contêm termos como potências, produtos de variáveis ou funções não-lineares.
-        * **Forçado vs. Não-Forçado (Autônomo):** Um sistema é **Forçado** se possui uma ou mais entradas externas que afetam seu comportamento (ex: $\epsilon(t)$ ou $q_{in}(t) \neq 0$). É **Não-Forçado** ou **Autônomo** se não há entradas externas, e sua resposta depende apenas das condições iniciais.
+        * **Forçado vs. Não-Forçado (Autônomo):** Um sistema é **Forçado** se possui uma ou mais entradas externas que afetam seu comportamento. É **Não-Forçado** ou **Autônomo** se não há entradas externas, e sua resposta depende apenas das condições iniciais.
         * **Invariante vs. Variante no Tempo:** **Invariante** se os parâmetros do modelo são constantes. **Variante** se os parâmetros mudam com o tempo.
         * **SISO vs. MISO, etc.:** Descreve a arquitetura de entradas/saídas. **SISO** (Single-Input, Single-Output), **MISO** (Multiple-Input, Single-Output), etc.
         * **Tempo-Contínuo vs. Tempo-Discreto:** **Contínuo** se descrito por equações diferenciais. **Discreto** se por equações de diferença.
