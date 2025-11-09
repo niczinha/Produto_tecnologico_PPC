@@ -133,7 +133,7 @@ elif st.session_state.node == 'modelo_teorico':
         """)
         
         # --- SEÇÃO DO TANQUE ATUALIZADA ---
-        with st.expander("Exemplo 1: Tanque de Nível (Integrador Puro)"):
+        with st.expander("Exemplo 1: Tanque de Nível "):
             st.markdown("Vamos modelar a altura do líquido $h(t)$ em um tanque, assumindo que as vazões são controladas externamente.")
             
             st.subheader("1. Princípio da Conservação de Massa")
@@ -189,7 +189,7 @@ elif st.session_state.node == 'modelo_teorico':
 
             Q_net = Q_in_tanque - Q_out_tanque
             h0 = 10.0 # Condição inicial de altura
-            t_tanque = np.linspace(0, 50, 500) # Eixo do tempo fixo
+            t_tanque = np.linspace(0, 100, 500) # Eixo do tempo fixo
             y_tanque = (Q_net / A_tanque) * t_tanque + h0
             # Garante que o nível não fique negativo
             y_tanque = np.maximum(y_tanque, 0) 
