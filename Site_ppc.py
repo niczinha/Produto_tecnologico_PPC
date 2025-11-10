@@ -2,9 +2,9 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import textwrap # Importa a biblioteca para corrigir a indentação
+import textwrap 
 
-# Configuração da página
+
 st.set_page_config(page_title="Guia de Processos", layout="centered")
 st.title("Guia Interativo de PPC")
 st.write("Navegue pelas perguntas para encontrar o caminho correto para o seu problema. Produto tecnológico feito por Nicole.")
@@ -96,7 +96,7 @@ elif st.session_state.node == 'modelo_teorico':
         texto_propriedades = """
         * **Dinâmico vs. Estático:** **Dinâmico** se o modelo contém derivadas, descrevendo a evolução temporal do sistema. **Estático** se descreve o sistema em regime permanente (derivadas nulas).
         * **Linear vs. Não-Linear:** **Linear** se as equações obedecem ao princípio da superposição. **Não-Linear** se contêm termos como potências, produtos de variáveis ou funções não-lineares.
-        * **Forçado vs. Não-Forçado (Autônomo):** Um sistema é **Forçado** se possui uma ou mais entradas externas que afetam seu comportamento (ex: $\epsilon(t)$ ou $q_{in}(t) \neq 0$). É **Não-Forçado** ou **Autônomo** se não há entradas externas, e sua resposta depende apenas das condições iniciais.
+        * **Forçado vs. Não-Forçado (Autônomo):** Um sistema é **Forçado** se possui uma ou mais entradas externas que afetam seu comportamento. É **Não-Forçado** ou **Autônomo** se não há entradas externas, e sua resposta depende apenas das condições iniciais.
         * **Invariante vs. Variante no Tempo:** **Invariante** se os parâmetros do modelo são constantes. **Variante** se os parâmetros mudam com o tempo.
         * **SISO vs. MISO, etc.:** Descreve a arquitetura de entradas/saídas. **SISO** (Single-Input, Single-Output), **MISO** (Multiple-Input, Single-Output), etc.
         * **Tempo-Contínuo vs. Tempo-Discreto:** **Contínuo** se descrito por equações diferenciais. **Discreto** se por equações de diferença.
@@ -550,8 +550,8 @@ elif st.session_state.node == 'modelo_teorico':
 
             omega_n = np.sqrt(k_mck / m_mck)
             zeta = c_mck / (2 * np.sqrt(m_mck * k_mck))
-            z0 = 1.0 # Condição inicial z(0)=1
-            v0 = 0.0 # Condição inicial z'(0)=0
+            z0 = 1.0 
+            v0 = 0.0 
 
             t_mck = np.linspace(0, 50, 500) # Eixo do tempo fixo
             
