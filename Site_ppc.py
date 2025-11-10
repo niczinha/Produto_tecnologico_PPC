@@ -125,7 +125,7 @@ elif st.session_state.node == 'modelo_teorico':
     # --- O CONTEÚDO PRINCIPAL MUDA COM BASE NA SELEÇÃO DA SIDEBAR ---
     
     if tipo_sistema == "Sistemas de Processos":
-        st.header("Sistemas de Processos (Fluidos e Térmicos)")
+        st.header("Sistemas de Processos (Fluidos)")
         st.info(r"""
         **Caixa de Ferramentas para Sistemas de Processos:**
         A ferramenta principal aqui é o **Balanço Geral** (Massa, Energia ou Momento) aplicado a um Volume de Controle.
