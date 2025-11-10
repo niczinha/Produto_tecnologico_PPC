@@ -3,7 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import textwrap 
-
+# A importação do solve_ivp não é necessária para este bloco de código,
+# pois a simulação interativa ainda não foi implementada aqui.
+# from scipy.integrate import solve_ivp 
 
 st.set_page_config(page_title="Guia de Processos", layout="centered")
 st.title("Guia Interativo de PPC")
@@ -84,12 +86,30 @@ elif st.session_state.node == 'modelo_teorico':
     * **A Regra de Ouro:** Sempre declare suas premissas! Elas dizem a quem for usar seu modelo o que ele pode (e não pode) fazer.
     """)
 
-    st.subheader("3. A Ferramenta Principal: O Balanço Geral")
-    st.markdown("A maioria dos modelos em engenharia de processos nasce da lei de conservação, que pode ser escrita como:")
-    st.latex(r"\text{ACÚMULO} = \text{ENTRADA} - \text{SAÍDA} + \text{GERAÇÃO} - \text{CONSUMO}")
+    st.subheader("3. As Ferramentas Principais: Leis de Conservação")
+    st.markdown("""
+    A maioria dos modelos em engenharia nasce de uma lei de conservação. A forma dessa lei depende da propriedade que estamos analisando.
     
-    st.subheader("4. O Que São as Propriedades de um Modelo?")
-    st.markdown("Após derivar um modelo, nós o classificamos para entender sua estrutura matemática e complexidade.")
+    **1. Balanço de Propriedades Escalares (Massa, Energia):**
+    
+    Para grandezas como **massa** e **energia**, que são o foco principal da Engenharia de Processos, a ferramenta central é o balanço geral em um volume de controle:
+    """)
+    st.latex(r"\text{ACÚMULO} = \text{ENTRADA} - \text{SAÍDA} + \text{GERAÇÃO} - \text{CONSUMO}")
+    st.markdown("""
+    * **Acúmulo:** A taxa de variação da propriedade dentro do sistema (ex: $\frac{dM}{dt}$).
+    * **Entrada/Saída:** Transporte da propriedade através das fronteiras (ex: vazões).
+    * **Geração/Consumo:** Criação ou destruição da propriedade (ex: reações químicas, geração de calor).
+
+    **2. Balanço de Propriedades Vetoriais (Momento/Força):**
+    
+    Para grandezas vetoriais como o **momento linear** (que se manifesta como **força**), a lei de conservação é a **2ª Lei de Newton**. Ela tem uma forma diferente, mas segue o mesmo princípio:
+    """)
+    st.latex(r"\sum \vec{F} = m\vec{a} = \frac{d(m\vec{v})}{dt}")
+    st.markdown(r"""
+    * **$\frac{d(m\vec{v})}{dt}$:** É o termo de **ACÚMULO** de momento linear.
+    * **$\sum \vec{F}$:** É o termo de **GERAÇÃO LÍQUIDA** de momento (a soma de todas as forças externas aplicadas ao sistema, como mola, atrito, etc.).
+    * Em muitos sistemas mecânicos (como o massa-mola), os termos de "Entrada/Saída" são nulos pois não há massa cruzando as fronteiras.
+    """)
     
     with st.expander("Clique para ver a descrição de cada propriedade"):
         # Define o texto como uma string multilinhas
@@ -223,12 +243,21 @@ elif st.session_state.node == 'modelo_teorico':
             * **Premissas:** Gás ideal, isotérmico, volume constante, parâmetros concentrados, aberturas de fluxo (k₁, k₂) constantes.
             * **Fluxos Mássicos (`F`):** Escoamento turbulento (não-linear).
             """)
-            st.latex(r"F_{entrada} \propto \sqrt{P_1 - P(t)}, \quad F_{saida} \propto \sqrt{P(t) - P_2}")
+            # Mostrando as equações de fluxo com k
+            st.latex(r"F_{entrada} = k_1 \sqrt{P_1 - P(t)}")
+            st.latex(r"F_{saida} = k_2 \sqrt{P(t) - P_2}")
             st.markdown("**Relação Massa-Pressão (Acúmulo):** Lei dos Gases Ideais.")
-            st.latex(r"m(t) = \left(\frac{V \cdot MM}{R \cdot T}\right) P(t) \implies \frac{dm}{dt} = \left(\frac{V \cdot MM}{R \cdot T}\right) \frac{dP}{dt}")
+            st.markdown(r"Assumindo $PV = nRT$ e $n = m/MM$, temos $m(t) = \left(\frac{V \cdot MM}{R \cdot T}\right) P(t)$.")
+            st.markdown(r"Como $V, MM, R, T$ são constantes:")
+            st.latex(r"\frac{dm}{dt} = \left(\frac{V \cdot MM}{R \cdot T}\right) \frac{dP}{dt}")
             
+            # --- SEÇÃO CORRIGIDA ---
             st.subheader("3. Obtenção do Modelo Dinâmico Final")
-            st.latex(r"\boxed{\frac{dP}{dt} \propto \left( k_1 \sqrt{P_1 - P} - k_2 \sqrt{P - P_2} \right)}")
+            st.markdown("Substituindo tudo no balanço de massa $\\frac{dm}{dt} = F_{entrada} - F_{saida}$:")
+            st.latex(r"\left(\frac{V \cdot MM}{R \cdot T}\right) \frac{dP}{dt} = k_1 \sqrt{P_1 - P} - k_2 \sqrt{P - P_2}")
+            st.markdown("Isolando $\\frac{dP}{dt}$:")
+            st.latex(r"\boxed{\frac{dP}{dt} = \left(\frac{R T}{V \cdot MM}\right) \left( k_1 \sqrt{P_1 - P} - k_2 \sqrt{P - P_2} \right)}")
+            # --- FIM DA SEÇÃO CORRIGIDA ---
             
             st.subheader("4. Análise e Classificação do Modelo")
             st.markdown("Modelo **Dinâmico**, **Não-Linear** (devido à raiz quadrada), **Forçado** (pelas pressões $P_1, P_2$), **MISO** (entradas $P_1, P_2$, saída $P$), de **Parâmetros Concentrados** e **Invariante no Tempo**.")
@@ -318,7 +347,7 @@ elif st.session_state.node == 'modelo_teorico':
             st.subheader("1. Princípio Fundamental (LKT)")
             st.latex(r"V_R + V_L + V_C = \epsilon")
             st.subheader("2. Relações Constitutivas")
-            st.markdown("Queremos a EDO em $V_C$. Usamos as relações baseadas em $i = C \frac{dV_C}{dt}$:")
+            st.markdown("Queremos a EDO em $V_C$. Usamos as relações baseadas em $i = C \\frac{dV_C}{dt}$:")
             st.latex(r"V_R = R \cdot i = RC \frac{dV_C}{dt}")
             st.latex(r"V_L = L \frac{di}{dt} = L \frac{d}{dt}\left(C \frac{dV_C}{dt}\right) = LC \frac{d^2V_C}{dt^2}")
             
@@ -710,7 +739,7 @@ elif st.session_state.node == 'modelo_teorico':
             st.latex(r"J \frac{d^2\theta}{dt^2} = K_1 \left( \frac{E(t) - K_2 \omega(t)}{R} \right) - B \omega(t)")
             st.markdown("Distribuindo os termos, chegamos à equação resultante (6) do slide:")
             st.latex(r"\boxed{J\frac{d^{2}\theta(t)}{dt^{2}} = \frac{K_1}{R}E(t) - \left(\frac{K_1 K_2}{R} + B\right)\omega(t)}")
-            st.markdown("Esta é uma EDO de 1ª ordem para a velocidade $\omega(t)$, já que $\frac{d^2\theta}{dt^2} = \frac{d\omega}{dt}$.")
+            st.markdown("Esta é uma EDO de 1ª ordem para a velocidade $\omega(t)$, já que $\\frac{d^2\theta}{dt^2} = \frac{d\omega}{dt}$.")
 
             st.subheader("5. Premissas e Classificação")
             st.markdown("""
