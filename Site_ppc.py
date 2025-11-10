@@ -635,7 +635,7 @@ elif st.session_state.node == 'modelo_teorico':
             st.subheader("4. Premissas e Classificação (Modelo Linearizado)")
             st.markdown(r"""
             * **Premissas:** Haste de massa desprezível, pivô sem atrito, massa pontual, movimento em 2D, **pequenos ângulos ($\sin\theta \approx \theta$)**.
-            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Não-Forçado** (autônomo), **SISO** (sem entrada, saída $\theta$), de **Segunda Ordem** e **Invariante no Tempo**.
+            * **Classificação:** Modelo **Dinâmico**, **Linear**, **Não-Forçado** de **Segunda Ordem** e **Invariante no Tempo**.
             """)
             
             st.subheader("5. Prévia da Resposta Dinâmica (Modelo Linearizado)")
