@@ -3,9 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import textwrap 
-# A importação do solve_ivp não é necessária para este bloco de código,
-# pois a simulação interativa ainda não foi implementada aqui.
-# from scipy.integrate import solve_ivp 
 
 st.set_page_config(page_title="Guia de Processos", layout="centered")
 st.title("Guia Interativo de PPC")
@@ -27,7 +24,7 @@ if st.session_state.node == 'inicio':
         st.session_state.node = 'analisar_modelo'
         st.rerun()
 
-# NÓ 2: CRIAR MODELO (LÓGICA REESTRUTURADA)
+
 elif st.session_state.node == 'criar_modelo':
     st.header("Qual é o seu ponto de partida para a modelagem?")
     st.info("Escolha a opção que melhor descreve sua necessidade atual.")
@@ -60,9 +57,6 @@ elif st.session_state.node == 'analisar_modelo':
         st.session_state.node = 'inicio'
         st.rerun()
 
-# --- PÁGINAS FINAIS (CONTEÚDO) ---
-
-# PÁGINA: MODELAGEM TEÓRICA (AULA COMPLETA E REESTRUTURADA)
 elif st.session_state.node == 'modelo_teorico':
     st.header("Aula: Modelagem por Princípios Fundamentais")
     st.success("Esta abordagem usa leis da física e química para descrever um processo.")
@@ -96,7 +90,7 @@ elif st.session_state.node == 'modelo_teorico':
     """)
     st.latex(r"\text{ACÚMULO} = \text{ENTRADA} - \text{SAÍDA} + \text{GERAÇÃO} - \text{CONSUMO}")
     st.markdown("""
-    * **Acúmulo:** A taxa de variação da propriedade dentro do sistema (ex: $\frac{dM}{dt}$).
+    * **Acúmulo:** A taxa de variação da propriedade dentro do sistema (ex: $\\frac{dM}{dt}$).
     * **Entrada/Saída:** Transporte da propriedade através das fronteiras (ex: vazões).
     * **Geração/Consumo:** Criação ou destruição da propriedade (ex: reações químicas, geração de calor).
 
