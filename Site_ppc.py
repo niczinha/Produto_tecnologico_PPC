@@ -2163,7 +2163,128 @@ elif st.session_state.node == 'modelo_teorico':
             """)
             st.subheader("4. Análise e Classificação do Modelo")
             st.markdown("Modelo **Dinâmico**, **Não-Linear** (devido aos termos $\sqrt{L}$ e $L$ no denominador), **Forçado** (pelas vazões $q_{in}$, $q_j$ e temperatura $T_{in}$), **MIMO** (entradas $q_{in}$, $T_{in}$, $q_j$, saídas $L$, $T$), de **Parâmetros Concentrados** e **Invariante no Tempo**.")
-                        
+        with st.expander("Exemplo 4: Reator Químico CSTR com Camisa - Sistema MIMO"):
+            st.markdown("""
+            O reator de mistura perfeita (CSTR) com reação exotérmica e troca térmica é um dos sistemas mais complexos e interessantes em controle de processos, pois apresenta **forte acoplamento** entre concentração e temperatura.
+            """)
+            
+            st.subheader("1. Balanço de Massa e Espécie")
+            st.markdown("""
+            Para um reator com volume ($V$) constante e densidade ($\rho$) constante, o balanço de massa global simplifica-se para:
+            """)
+            st.latex(r"q_{entrada} = q_{saida} = q_1")
+            
+            st.markdown("**Dedução do Balanço de Componente A:**")
+            st.markdown("""
+            Aplicamos o princípio: $\\text{Acúmulo} = \\text{Entrada} - \\text{Saída} + \\text{Geração/Consumo}$.
+            1. **Acúmulo:** $\\frac{d(V C_A)}{dt} = V \\frac{d C_A}{dt}$ (Volume constante).
+            2. **Entrada:** $q_1 C_{A,1}$ (Vazão $\\times$ Concentração de entrada).
+            3. **Saída:** $q_1 C_A$ (Vazão $\\times$ Concentração no reator - mistura perfeita).
+            4. **Consumo por Reação:** $-\Gamma V$ (Taxa de reação $\\times$ Volume).
+            """)
+            st.latex(r"V \frac{dC_A}{dt} = q_1 C_{A,1} - q_1 C_A - \Gamma V")
+            st.markdown("Dividindo por $V$, obtemos a variação da concentração no tempo:")
+            st.latex(r"\boxed{\frac{dC_A}{dt} = \frac{q_1}{V}(C_{A,1} - C_A) - \Gamma}")
+
+            st.subheader("2. Balanço de Energia (Reator e Camisa)")
+            st.markdown("""
+            O balanço de energia baseia-se na variação da entalpia. Para líquidos, consideramos $E \\approx H = \\rho V c_p (T - T_{ref})$.
+            """)
+            
+            st.markdown("**No Reator:**")
+            st.markdown("""
+            A temperatura muda devido a quatro fatores:
+            1. **Convecção:** Calor que entra com a carga e sai com o produto.
+            2. **Calor de Reação:** Reações exotérmicas ($\Delta H_r < 0$) liberam energia. O termo é $(-\Delta H_r) \Gamma V$.
+            3. **Troca Térmica:** Calor transferido para a camisa: $Q = UA(T_c - T)$.
+            """)
+            st.latex(r"\rho V c_p \frac{dT}{dt} = \rho q_1 c_p (T_1 - T) + (-\Delta H_r) \Gamma V + UA(T_c - T)")
+            
+            st.markdown("**Na Camisa de Resfriamento:**")
+            st.markdown("""
+            A dinâmica da camisa é essencial para o controle. O fluido refrigerante entra a $T_{c,0}$ e remove calor do reator:
+            """)
+            st.latex(r"\rho_c V_c c_{p,c} \frac{dT_c}{dt} = \rho_c q_c c_{p,c} (T_{c,0} - T_c) + UA(T - T_c)")
+            st.caption("Nota: O sinal de UA inverte-se pois o calor que o reator perde é o calor que a camisa ganha.")
+
+            st.subheader("3. Equação Constitutiva: Lei de Arrhenius")
+            st.markdown("""
+            A taxa de reação $\Gamma$ não é constante; ela depende da concentração e, **exponencialmente**, da temperatura:
+            """)
+            st.latex(r"\Gamma = k_0 \cdot \exp\left(-\frac{E}{RT}\right) \cdot C_A")
+            st.markdown("""
+            Esta exponencial é a fonte da **não-linearidade** severa do sistema. Pequenos aumentos em $T$ aumentam drasticamente $\Gamma$, que libera mais calor (exotérmica), podendo levar ao fenômeno de *runaway* térmico.
+            """)
+
+            st.subheader("4. Simulação Dinâmica Interativa (solve_ivp)")
+            st.info("Utilizamos o método numérico para resolver o sistema de 3 EDOs acopladas ($C_A, T, T_c$).")
+
+            # Parâmetros Físicos Fictícios mas Coerentes
+            V = 100.0        # L (Volume do Reator)
+            Vc = 20.0        # L (Volume da Camisa)
+            rho = 1000.0     # g/L (Densidade)
+            cp = 0.5         # cal/g.K (Calor específico)
+            k0 = 1e10        # min^-1 (Fator pré-exponencial)
+            ER = 8000.0      # K (Energia de ativação / R)
+            dH = -20000.0    # cal/mol (Entalpia de reação - Exotérmica)
+            UA = 150.0       # cal/min.K (Coeficiente global de troca)
+            CA1 = 1.0        # mol/L (Concentração de entrada)
+            T1 = 350.0       # K (Temperatura de entrada)
+            Tc0 = 300.0      # K (Temperatura da água da camisa)
+
+            # Controles de Entrada (Perturbações)
+            col1, col2 = st.columns(2)
+            with col1:
+                q1 = st.slider("Vazão de Processo $q_1$ [L/min]", 1.0, 20.0, 10.0, key='cstr_q1')
+            with col2:
+                qc = st.slider("Vazão de Resfriamento $q_c$ [L/min]", 1.0, 50.0, 15.0, key='cstr_qc')
+
+            def cstr_ode(t, y, q1, qc):
+                Ca, T, Tc = y
+                # Reação (Arrhenius)
+                Gamma = k0 * np.exp(-ER / T) * Ca
+                
+                # 1. dCa/dt
+                dCadt = (q1/V)*(CA1 - Ca) - Gamma
+                # 2. dT/dt (Reator)
+                dTdt = (q1/V)*(T1 - T) + ((-dH)*Gamma)/(rho*cp) + (UA/(rho*V*cp))*(Tc - T)
+                # 3. dTc/dt (Camisa)
+                dTcdt = (qc/Vc)*(Tc0 - Tc) + (UA/(rho*Vc*cp))*(T - Tc)
+                
+                return [dCadt, dTdt, dTcdt]
+
+            # Resolver
+            t_eval = np.linspace(0, 60, 600)
+            sol = solve_ivp(cstr_ode, [0, 60], [0.5, 330.0, 310.0], args=(q1, qc), t_eval=t_eval)
+
+            # Visualização
+            fig_r, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+            ax1.plot(sol.t, sol.y[0], 'g', label='Concentração $C_A$ [mol/L]')
+            ax1.set_ylabel('Conc. [mol/L]')
+            ax1.legend(); ax1.grid(True, alpha=0.3)
+            
+            ax2.plot(sol.t, sol.y[1], 'r', label='T (Reator)')
+            ax2.plot(sol.t, sol.y[2], 'b--', label='Tc (Camisa)')
+            ax2.set_ylabel('Temperatura [K]')
+            ax2.set_xlabel('Tempo [min]')
+            ax2.legend(); ax2.grid(True, alpha=0.3)
+            st.pyplot(fig_r)
+
+            st.subheader("5. Análise das Variáveis e Acoplamento")
+            st.markdown(f"""
+            * **Efeito da Vazão $q_1$:** Ao aumentar a vazão, o reagente passa menos tempo no reator (menor tempo de residência), o que geralmente diminui a conversão (aumenta $C_A$ na saída).
+            * **O Papel da Camisa ($q_c$):** É a variável manipulada para controlar a temperatura. Se $q_c$ aumenta, $T_c$ cai, aumentando o gradiente $(T - T_c)$ e removendo mais calor.
+            * **Acoplamento Térmico:** Note que quando a temperatura (T) sobe, a concentração ($C_A$) cai mais rápido. Isso ocorre porque a reação acelera exponencialmente com o calor, consumindo o reagente.
+            """)
+
+            st.subheader("6. Classificação do Modelo")
+            st.markdown("""
+            * **Dinâmico:** Representado por EDOs.
+            * **Não-Linear:** Devido ao termo de Arrhenius e ao produto entre variáveis.
+            * **MIMO:** Entradas ($q_1, q_c$) e Saídas ($C_A, T, T_c$).
+            * **Parâmetros Concentrados:** Assume mistura perfeita (sem variação espacial).
+            vido à exponencial de Arrhenius e produtos entre variáveis), **Forçado** (pelas vazões e temperaturas de entrada), **MIMO** (entradas $q_1, q_c$; saídas $C_A, T, T_c$), de **Parâmetros Concentrados** e **Invariante no Tempo**.")
+            """)
     elif tipo_sistema == "Sistemas Elétricos":
         st.header("Sistemas Elétricos")
         st.info(r"""
@@ -2187,86 +2308,6 @@ elif st.session_state.node == 'modelo_teorico':
         * **$L$:** Indutância [H]
         * **$C$:** Capacitância [F]
         """)
-        with st.expander("Exemplo 4: Reator Químico CSTR com Camisa - Sistema MIMO"):
-            st.markdown("Vamos modelar um reator de mistura perfeita (CSTR) com uma reação exotérmica $A \rightarrow B$ e resfriamento por camisa.")
-            
-            st.subheader("1. Princípio da Conservação de Massa e Espécie")
-            st.markdown("Considerando volume ($V$) e densidade ($\rho$) constantes (Balanço Global em regime permanente de massa):")
-            st.latex(r"q_1 = q")
-            st.markdown("Balanço por espécie $A$ (Acúmulo = Entrada - Saída - Reação):")
-            st.latex(r"V \frac{dC_A}{dt} = q_1(C_{A,1} - C_A) - \Gamma V")
-            
-            st.subheader("2. Princípio da Conservação de Energia")
-            st.markdown("Balanço de energia no reator e na camisa de resfriamento:")
-            st.latex(r"\rho V c_p \frac{dT}{dt} = \rho q_1 c_p (T_1 - T) + (-\Delta H_r) \Gamma V + UA(T_c - T)")
-            st.latex(r"\rho_c V_c c_{p,c} \frac{dT_c}{dt} = \rho_c q_c c_{p,c} (T_{c,0} - T_c) - UA(T_c - T)")
-
-            st.subheader("3. Equações Constitutivas (Lei de Arrhenius)")
-            st.markdown("A taxa de reação ($\Gamma$) depende fortemente da temperatura:")
-            st.latex(r"\Gamma = k_0 \exp\left(-\frac{E}{RT}\right) C_A")
-
-            st.subheader("4. Simulação Dinâmica Interativa (solve_ivp)")
-            st.info("Explore como a vazão de alimentação (q1) e a vazão de resfriamento (qc) afetam a conversão e a temperatura.")
-
-            # Parâmetros Fixos (Baseados em literatura de reatores)
-            V = 100.0        # L
-            Vc = 20.0        # L
-            rho = 1000.0     # g/L
-            cp = 4.18        # J/(g.K)
-            k0 = 7.2e10      # 1/min
-            E_R = 8750.0     # K (E/R)
-            dH = -50000.0    # J/mol (Exotérmica)
-            UA = 5000.0      # J/(min.K)
-            CA1 = 1.0        # mol/L
-            T1 = 350.0       # K
-            Tc0 = 300.0      # K
-
-            col1, col2 = st.columns(2)
-            with col1:
-                q1 = st.slider("Vazão de Alimentação $q_1$ [L/min]", 5.0, 50.0, 10.0, key='r_q1')
-            with col2:
-                qc = st.slider("Vazão de Resfriamento $q_c$ [L/min]", 5.0, 100.0, 15.0, key='r_qc')
-
-            def cstr_system(t, y, q1, qc):
-                Ca, T, Tc = y
-                # Cinética
-                Gamma = k0 * np.exp(-E_R / T) * Ca
-                
-                # EDOs
-                dCadt = (q1/V)*(CA1 - Ca) - Gamma
-                dTdt = (q1/V)*(T1 - T) + (-dH*Gamma)/(rho*cp) + (UA/(rho*V*cp))*(Tc - T)
-                dTcdt = (qc/Vc)*(Tc0 - Tc) - (UA/(rho*Vc*cp))*(Tc - T)
-                
-                return [dCadt, dTdt, dTcdt]
-
-            # Resolver
-            t_final_r = st.slider("Tempo de Simulação [min]", 1, 100, 30)
-            sol_r = solve_ivp(cstr_system, [0, t_final_r], [0.8, 350.0, 305.0], args=(q1, qc), t_eval=np.linspace(0, t_final_r, 500))
-
-            # Gráficos
-            fig_r, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
-            ax1.plot(sol_r.t, sol_r.y[0], 'g-', label='Concentração $C_A$ [mol/L]')
-            ax1.set_ylabel('Concentração')
-            ax1.legend()
-            ax1.grid(True, alpha=0.3)
-            
-            ax2.plot(sol_r.t, sol_r.y[1], 'r-', label='Temp. Reator (T)')
-            ax2.plot(sol_r.t, sol_r.y[2], 'b--', label='Temp. Camisa (Tc)')
-            ax2.set_xlabel('Tempo [min]')
-            ax2.set_ylabel('Temperatura [K]')
-            ax2.legend()
-            ax2.grid(True, alpha=0.3)
-            st.pyplot(fig_r)
-
-            st.subheader("5. Análise das Variáveis")
-            st.markdown(r"""
-            * **Vazão $q_1$:** Afeta o tempo de residência ($V/q_1$). Aumentar $q_1$ reduz o tempo para a reação ocorrer, mas traz mais reagente fresco.
-            * **Vazão $q_c$:** É a principal variável de manipulação para controle térmico. O aumento de $q_c$ remove o calor gerado pela reação exotérmica através do termo $UA(T_c - T)$.
-            * **Acoplamento:** A concentração $C_A$ e a temperatura $T$ são fortemente acopladas através do termo de reação não-linear (Arrhenius).
-            """)
-
-            st.subheader("6. Análise e Classificação do Modelo")
-            st.markdown("Modelo **Dinâmico**, **Não-Linear** (devido à exponencial de Arrhenius e produtos entre variáveis), **Forçado** (pelas vazões e temperaturas de entrada), **MIMO** (entradas $q_1, q_c$; saídas $C_A, T, T_c$), de **Parâmetros Concentrados** e **Invariante no Tempo**.")
 
         with st.expander("Exemplo 1: Circuito RC (Malha Única)"):
             st.markdown("Vamos modelar a carga `q(t)` no capacitor em um circuito RC série com fonte $\epsilon$.")
@@ -2700,9 +2741,9 @@ elif st.session_state.node == 'modelo_teorico':
             st.markdown("Agora, substituímos $i(t)$ (na eq. 3) e $\tau_f$ (eq. 5) na equação mecânica (1):")
             st.latex(r"J \frac{d^2\theta}{dt^2} = \tau_g - \tau_f = K_1 \cdot i(t) - B \omega(t)")
             st.latex(r"J \frac{d^2\theta}{dt^2} = K_1 \left( \frac{E(t) - K_2 \omega(t)}{R} \right) - B \omega(t)")
-            st.markdown("Distribuindo os termos, chegamos à equação resultante (6) do slide:")
+            st.markdown("Distribuindo os termos, chegamos à equação resultante :")
             st.latex(r"\boxed{J\frac{d^{2}\theta(t)}{dt^{2}} = \frac{K_1}{R}E(t) - \left(\frac{K_1 K_2}{R} + B\right)\omega(t)}")
-            st.markdown("Esta é uma EDO de 1ª ordem para a velocidade $\omega(t)$, já que $\\frac{d^2\theta}{dt^2} = \frac{d\omega}{dt}$.")
+            st.markdown("Esta é uma EDO de 1ª ordem para a velocidade $\omega(t)$, já que $\\frac{d^2\\theta}{dt^2} = \\frac{d\omega}{dt}$.")
 
             st.subheader("5. Premissas e Classificação")
             st.markdown("""
@@ -2759,27 +2800,7 @@ elif st.session_state.node == 'modelo_teorico':
             st.pyplot(fig_dc)
             plt.close(fig_dc)
 
-        with st.expander("Exemplo 2: Válvula Solenoide (Não-Linear)"):
-            st.markdown("Este é um sistema eletromecânico complexo onde os parâmetros elétricos dependem da posição mecânica.")
-            st.subheader("1. Domínio Elétrico (Acoplado)")
-            st.markdown("A indutância $L(x)$ depende da posição $x$ do êmbolo:")
-            st.latex(r"u(t) = R i(t) + L(x)\frac{di}{dt} + i(t)\frac{dL(x)}{dx}\frac{dx}{dt}")
-            
-            st.subheader("2. Domínio Mecânico (Acoplado)")
-            st.markdown("A força magnética $F_m$ depende da corrente $i$ e da posição $x$:")
-            st.latex(r"m\frac{d^2x}{dt^2} + c\frac{dx}{dt} + kx(t) = F_m(i, x)")
-            
-            st.subheader("3. Equação de Acoplamento (Não-Linear)")
-            st.latex(r"F_m(i, x) = \frac{1}{2}\frac{dL(x)}{dx}i(t)^2")
-            
-            st.subheader("4. Premissas e Classificação")
-            st.markdown("""
-            * **Premissas:** Atrito viscoso, mola linear, indutância $L$ é uma função não-linear de $x$.
-            * **Classificação:** Modelo **Dinâmico**, **Não-Linear**, **Acoplado**, **Forçado** (pela tensão $u$), **MIMO** (entrada $u$, saídas $x$ e $i$), de **Terceira Ordem** (EDOs para $\dot{x}$, $\ddot{x}$ e $\dot{i}$) e **Invariante no Tempo**.
-            """)
-            st.info("A simulação de sistemas não-lineares acoplados é altamente complexa e requer métodos numéricos avançados.")
 
-# ==============================================================================
 # NÓ 3: ANALISAR MODELO (ORGANIZAÇÃO POR ABAS)
 # 
 
