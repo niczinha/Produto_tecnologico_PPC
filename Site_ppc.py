@@ -2187,6 +2187,86 @@ elif st.session_state.node == 'modelo_teorico':
         * **$L$:** Indutância [H]
         * **$C$:** Capacitância [F]
         """)
+        with st.expander("Exemplo 4: Reator Químico CSTR com Camisa - Sistema MIMO"):
+            st.markdown("Vamos modelar um reator de mistura perfeita (CSTR) com uma reação exotérmica $A \rightarrow B$ e resfriamento por camisa.")
+            
+            st.subheader("1. Princípio da Conservação de Massa e Espécie")
+            st.markdown("Considerando volume ($V$) e densidade ($\rho$) constantes (Balanço Global em regime permanente de massa):")
+            st.latex(r"q_1 = q")
+            st.markdown("Balanço por espécie $A$ (Acúmulo = Entrada - Saída - Reação):")
+            st.latex(r"V \frac{dC_A}{dt} = q_1(C_{A,1} - C_A) - \Gamma V")
+            
+            st.subheader("2. Princípio da Conservação de Energia")
+            st.markdown("Balanço de energia no reator e na camisa de resfriamento:")
+            st.latex(r"\rho V c_p \frac{dT}{dt} = \rho q_1 c_p (T_1 - T) + (-\Delta H_r) \Gamma V + UA(T_c - T)")
+            st.latex(r"\rho_c V_c c_{p,c} \frac{dT_c}{dt} = \rho_c q_c c_{p,c} (T_{c,0} - T_c) - UA(T_c - T)")
+
+            st.subheader("3. Equações Constitutivas (Lei de Arrhenius)")
+            st.markdown("A taxa de reação ($\Gamma$) depende fortemente da temperatura:")
+            st.latex(r"\Gamma = k_0 \exp\left(-\frac{E}{RT}\right) C_A")
+
+            st.subheader("4. Simulação Dinâmica Interativa (solve_ivp)")
+            st.info("Explore como a vazão de alimentação (q1) e a vazão de resfriamento (qc) afetam a conversão e a temperatura.")
+
+            # Parâmetros Fixos (Baseados em literatura de reatores)
+            V = 100.0        # L
+            Vc = 20.0        # L
+            rho = 1000.0     # g/L
+            cp = 4.18        # J/(g.K)
+            k0 = 7.2e10      # 1/min
+            E_R = 8750.0     # K (E/R)
+            dH = -50000.0    # J/mol (Exotérmica)
+            UA = 5000.0      # J/(min.K)
+            CA1 = 1.0        # mol/L
+            T1 = 350.0       # K
+            Tc0 = 300.0      # K
+
+            col1, col2 = st.columns(2)
+            with col1:
+                q1 = st.slider("Vazão de Alimentação $q_1$ [L/min]", 5.0, 50.0, 10.0, key='r_q1')
+            with col2:
+                qc = st.slider("Vazão de Resfriamento $q_c$ [L/min]", 5.0, 100.0, 15.0, key='r_qc')
+
+            def cstr_system(t, y, q1, qc):
+                Ca, T, Tc = y
+                # Cinética
+                Gamma = k0 * np.exp(-E_R / T) * Ca
+                
+                # EDOs
+                dCadt = (q1/V)*(CA1 - Ca) - Gamma
+                dTdt = (q1/V)*(T1 - T) + (-dH*Gamma)/(rho*cp) + (UA/(rho*V*cp))*(Tc - T)
+                dTcdt = (qc/Vc)*(Tc0 - Tc) - (UA/(rho*Vc*cp))*(Tc - T)
+                
+                return [dCadt, dTdt, dTcdt]
+
+            # Resolver
+            t_final_r = st.slider("Tempo de Simulação [min]", 1, 100, 30)
+            sol_r = solve_ivp(cstr_system, [0, t_final_r], [0.8, 350.0, 305.0], args=(q1, qc), t_eval=np.linspace(0, t_final_r, 500))
+
+            # Gráficos
+            fig_r, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+            ax1.plot(sol_r.t, sol_r.y[0], 'g-', label='Concentração $C_A$ [mol/L]')
+            ax1.set_ylabel('Concentração')
+            ax1.legend()
+            ax1.grid(True, alpha=0.3)
+            
+            ax2.plot(sol_r.t, sol_r.y[1], 'r-', label='Temp. Reator (T)')
+            ax2.plot(sol_r.t, sol_r.y[2], 'b--', label='Temp. Camisa (Tc)')
+            ax2.set_xlabel('Tempo [min]')
+            ax2.set_ylabel('Temperatura [K]')
+            ax2.legend()
+            ax2.grid(True, alpha=0.3)
+            st.pyplot(fig_r)
+
+            st.subheader("5. Análise das Variáveis")
+            st.markdown(r"""
+            * **Vazão $q_1$:** Afeta o tempo de residência ($V/q_1$). Aumentar $q_1$ reduz o tempo para a reação ocorrer, mas traz mais reagente fresco.
+            * **Vazão $q_c$:** É a principal variável de manipulação para controle térmico. O aumento de $q_c$ remove o calor gerado pela reação exotérmica através do termo $UA(T_c - T)$.
+            * **Acoplamento:** A concentração $C_A$ e a temperatura $T$ são fortemente acopladas através do termo de reação não-linear (Arrhenius).
+            """)
+
+            st.subheader("6. Análise e Classificação do Modelo")
+            st.markdown("Modelo **Dinâmico**, **Não-Linear** (devido à exponencial de Arrhenius e produtos entre variáveis), **Forçado** (pelas vazões e temperaturas de entrada), **MIMO** (entradas $q_1, q_c$; saídas $C_A, T, T_c$), de **Parâmetros Concentrados** e **Invariante no Tempo**.")
 
         with st.expander("Exemplo 1: Circuito RC (Malha Única)"):
             st.markdown("Vamos modelar a carga `q(t)` no capacitor em um circuito RC série com fonte $\epsilon$.")
